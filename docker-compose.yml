@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: greenbridge-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: greenBridgeRootPassword
+      MYSQL_DATABASE: u815114538_GREENBRIDGE
+      MYSQL_USER: u815114538_admin
+      MYSQL_PASSWORD: greenBridge1
+    ports:
+      - "33066:3306"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u$$MYSQL_USER", "-p$$MYSQL_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    container_name: greenbridge-web
+    restart: always
+    ports:
+      - "8000:80"
+    environment:
+      DB_HOST: db
+      DB_NAME: u815114538_GREENBRIDGE
+      DB_USER: u815114538_admin
+      DB_PASS: greenBridge1
+      SITE_URL: http://localhost:8000/
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: greenbridge-phpmyadmin
+    restart: always
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: db
+      PMA_USER: u815114538_admin
+      PMA_PASSWORD: greenBridge1
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db_data:
